@@ -130,11 +130,18 @@ extra="$(env CLUSTER_CONF="${TMP}/cluster.conf" CUBESTACK_RELEASE=9.9.2 CUBESTAC
     bash -c 'source "$1"; load_config; printf "%s" "${CUBESTACK_EXTRA_MODULES_DIRS:-}"' _ "${LIB}" 2>/dev/null)"
 chk "公共版本树不设置额外模块目录" "" "${extra}"
 
-# 调用方显式指定时以调用方为准(调试/非常规布局)。
+# 调用方已指定额外目录时**追加**版本树的, 不是覆盖: 覆盖会让版本树模块整体消失,
+# 而那是静默的(用户以为自己设了变量, 实际少装一整套模块)。
 extra="$(env CLUSTER_CONF="${TMP}/cluster.conf" CUBESTACK_RELEASE=9.9.3 CUBESTACK_RELEASE_ROOT="${TMP}/rel" \
     CUBESTACK_EXTRA_MODULES_DIRS=/custom/modules \
     bash -c 'source "$1"; load_config; printf "%s" "${CUBESTACK_EXTRA_MODULES_DIRS:-}"' _ "${LIB}" 2>/dev/null)"
-chk "显式指定优先于自动发现" "/custom/modules" "${extra}"
+chk "显式指定后追加版本树目录" "/custom/modules:${TMP}/rel/9.9.3/modules" "${extra}"
+
+# 已在列表里时不重复追加(幂等)。
+extra="$(env CLUSTER_CONF="${TMP}/cluster.conf" CUBESTACK_RELEASE=9.9.3 CUBESTACK_RELEASE_ROOT="${TMP}/rel" \
+    CUBESTACK_EXTRA_MODULES_DIRS="/custom/one:${TMP}/rel/9.9.3/modules" \
+    bash -c 'source "$1"; load_config; printf "%s" "${CUBESTACK_EXTRA_MODULES_DIRS:-}"' _ "${LIB}" 2>/dev/null)"
+chk "已包含时不重复追加" "/custom/one:${TMP}/rel/9.9.3/modules" "${extra}"
 
 if [ "${fail}" = "0" ]; then
     echo "✅ test-release-mode: 全部通过"

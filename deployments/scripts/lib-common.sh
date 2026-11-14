@@ -933,13 +933,16 @@ load_config() {
         # 版本树里可能带私有模块: 布局固定为 <版本树根>/{offline-files/, modules/}。
         # 这里只把位置告诉模块框架, 是否真正发现/执行由 lib-module.sh 决定。
         # 公共版本没有 modules/, 因此什么都不发生。
-        if [ -z "${CUBESTACK_EXTRA_MODULES_DIRS:-}" ]; then
-            _release_modules_dir="$(dirname "${OFFLINE_FILES_ROOT}")/modules"
-            if [ -d "${_release_modules_dir}" ]; then
-                CUBESTACK_EXTRA_MODULES_DIRS="${_release_modules_dir}"
-                export CUBESTACK_EXTRA_MODULES_DIRS
-                vlog "发现版本树私有模块: ${_release_modules_dir}"
-            fi
+        _release_modules_dir="$(dirname "${OFFLINE_FILES_ROOT}")/modules"
+        if [ -d "${_release_modules_dir}" ]; then
+            # 追加而不是覆盖: 调用方可能已指定额外的模块目录(调试/非常规布局), 两者都该
+            # 生效 —— 否则"设了变量"会静默让版本树的模块整体消失, 那是最难排查的失败。
+            case ":${CUBESTACK_EXTRA_MODULES_DIRS:-}:" in
+                *":${_release_modules_dir}:"*) : ;;   # 已在列表里
+                *) CUBESTACK_EXTRA_MODULES_DIRS="${CUBESTACK_EXTRA_MODULES_DIRS:+${CUBESTACK_EXTRA_MODULES_DIRS}:}${_release_modules_dir}"
+                   export CUBESTACK_EXTRA_MODULES_DIRS
+                   vlog "发现版本树私有模块: ${_release_modules_dir}" ;;
+            esac
         fi
         unset _rel_root _layout _auto_rel_env _auto_ver _release_modules_dir
     fi

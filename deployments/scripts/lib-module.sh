@@ -80,13 +80,21 @@ cs_merge_modules_dirs() {
     fi
 
     # 来源变了(首次为空 → load_config 之后变成版本树 modules/): 丢掉旧合并根, 从基座
-    # 重来, 否则新根会把旧根再链一遍形成自我嵌套。只删自己创建的那种目录。
+    # 重来, 否则新根会把旧根再链一遍形成自我嵌套。
+    # 只删**本进程**创建的: 合并根可能由父进程建好后导出给子进程, 子进程的 $$ 不同 ——
+    # 若它走到这里(说明 EXTRA_MODULES_DIRS 被改过), 删掉父进程的目录会破坏父进程状态。
     if [ -n "${CUBESTACK_MODULES_MERGED:-}" ]; then
-        case "${CUBESTACK_MODULES_MERGED}" in
-            "${_cs_self_dir}"/.modules-merged.*) rm -rf "${CUBESTACK_MODULES_MERGED}" 2>/dev/null || true ;;
-            *) echo "error: refusing to rebuild foreign merged dir: ${CUBESTACK_MODULES_MERGED}" >&2; exit 1 ;;
-        esac
-        unset CUBESTACK_MODULES_MERGED CUBESTACK_MODULES_MERGED_FROM
+        if [ "${CUBESTACK_MODULES_MERGED_OWNER:-}" = "$$" ]; then
+            case "${CUBESTACK_MODULES_MERGED}" in
+                "${_cs_self_dir}"/.modules-merged.*) rm -rf "${CUBESTACK_MODULES_MERGED}" 2>/dev/null || true ;;
+                *) echo "error: merged dir is not where we created it: ${CUBESTACK_MODULES_MERGED}" >&2; exit 1 ;;
+            esac
+        else
+            echo "error: merged modules dir belongs to another process (owner=${CUBESTACK_MODULES_MERGED_OWNER:-unknown}, me=$$)" >&2
+            echo "       CUBESTACK_EXTRA_MODULES_DIRS changed under a shared merged root" >&2
+            exit 1
+        fi
+        unset CUBESTACK_MODULES_MERGED CUBESTACK_MODULES_MERGED_FROM CUBESTACK_MODULES_MERGED_OWNER
     fi
     MODULES_DIR="${_cs_base}"
     [ -n "${_cs_want}" ] || return 0
@@ -138,6 +146,7 @@ cs_merge_modules_dirs() {
     MODULES_DIR="${_cs_merged}"
     export CUBESTACK_MODULES_MERGED="${_cs_merged}"
     export CUBESTACK_MODULES_MERGED_FROM="${_cs_want}"
+    export CUBESTACK_MODULES_MERGED_OWNER="$$"
     unset -f _cs_link_phase
     unset _cs_merged _cs_phase_dir _cs_phase_dirs _cs_root
 }
