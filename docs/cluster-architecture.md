@@ -127,7 +127,7 @@ ip route get <远端podIP>             # 无封装时是否 via 节点且可达
 | **metrics-server** | HPA 依赖的指标 | kubelet Summary API 聚合 | kubespray 标准组件, HPA 必需 | `METRICS_SERVER_ENABLED=true` |
 | **MetaX GPU Operator** | 沐曦 GPU 驱动/识别/调度 | helm chart + CRD(ClusterOperator)驱动组件 DaemonSet; 内置 registry 存放镜像 | 裸金属沐曦 GPU 必备; 离线 tar 加载 + helm 原生安装; master 有 GPU 时自动解除不可调度 | `GPU_OPERATOR_ENABLED=true` + 见 `docs/metax-gpu-operator.md` |
 | **Rook-Ceph** | 企业级分布式存储(块 RBD / 可选 CephFS / RGW) | Rook v1.20.2 operator + CephCluster(mon=3, host 故障域, 3 副本); OSD 用**自动分类出的可用盘**(`free ∪ ceph`, per-node devices); 节点经 label(`ceph-storage=rook-ceph`)选择 | 可承受节点故障的高可用存储(P1-6/7 刚需); 供 registry 等 PVC 后端(替代 local-path); 离线镜像 ctr import + lvm2 离线包 | `CEPH_ENABLED=true`/`CEPH_CSI_ENABLED=true` + `--steps ceph,ceph_csi` + 见 `docs/ceph-rook.md` |
-| **CubeStack Operator** | 平台自研组件的编排者: 一个 `CubeStackCluster` CR 描述整个平台, operator 按组件目录(catalog)渲染 chart 并 apply, 管理健康与卸载 | 独立 helm chart 安装(**本地 vendored 副本**恒用, 在线只用于比对刷新); chart 渲染动态提取镜像 → 推入集群内置 registry → 节点只从那里拉; 滚动 `:latest` 用 digest 注解触发滚动 + `Always` 拉取; CRD 每次预 apply(helm 的 `crds/` 只在不存在时装) | 平台组件统一由 CR 声明式管理(装卸/健康集中一处); 离线可部署(镜像入内置 registry, 部署不访问 Harbor) | `CUBESTACK_OPERATOR_ENABLED=true` / `--steps cubestack_operator` + 见 `docs/cubestack-operator.md` |
+| **平台 Operator** | 平台自研组件的编排者: 一个 `CubeStackCluster` CR 描述整个平台, operator 按组件目录(catalog)渲染 chart 并 apply, 管理健康与卸载 | **不在本仓**：模块、chart、镜像集随版本树分发; 见 `docs/cubestack-operator.md` | 平台组件统一由 CR 声明式管理(装卸/健康集中一处); 离线可部署(镜像入内置 registry, 部署不访问 Harbor) | `CUBESTACK_OPERATOR_ENABLED` / `--steps cubestack_operator`(需版本树) |
 
 > 详细部署/开关见 `cluster.conf` 组件开关段与 `deployments/scripts/modules/`。
 > 后续新增 operator 按 `.claude/skills/cubestack-operator-onboarding/SKILL.md` 流程添加并更新本表。

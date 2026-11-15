@@ -1303,7 +1303,8 @@ kubectl -n cubestack-system get deploy cubestack-operator \
 kubectl -n cubestack-system get pods -o wide
 # 更新镜像/ chart 后重跑 --steps, Pod AGE 应变化; 内容未变则 digest 注解不变、不重启
 ```
-详见 `docs/cubestack-operator.md` §1.1 / §3.6。
+完整处置流程见私有仓 cubestack-release 的 operator-module 文档（§1.1 部署模式 / §3.6 `:latest` 滚动）。
+本仓不含平台 operator 的模块与组件，因此无法给出逐一对照的排障步骤。
 
 ### 6. 【2026-10-19 事故】`verify_cubestack_operator` 的冒烟 CR 删掉了真实 `lws-system` 命名空间
 
