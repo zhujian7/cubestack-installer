@@ -37,6 +37,7 @@ env:
   PAUSE_VERSION: 3.10.1
   RDMA_IMAGE_TAG: v1.5.4
   REGISTRY_IMAGE_TAG: 2.8.1
+  BUSYBOX_VERSION: 1.38.0
   NETSHOOT_RDMA_VERSION: sha-ea1b33c
   CEPHCSI_VERSION: v3.17.0
   CEPH_CSI_OPERATOR_VERSION: v1.0.4
@@ -220,9 +221,13 @@ images:
   version: ${LOCAL_PATH_VERSION}
   dest: offline-files/kubespray/${KUBESPRAY_VERSION}/images
   tar: docker.io_rancher_local-path-provisioner_${LOCAL_PATH_VERSION}.tar
+# The shell the platform's init containers run. It lives here because the
+# public base owns it — kubespray's local-path helper pod is the other consumer —
+# and the release injects the same version into the components that name it, so
+# there is one value rather than a copy per consumer.
 - key: k8s-base:docker.io/library/busybox
   catalog_id: kubernetes/busybox
-  version: 1.38.0
+  version: ${BUSYBOX_VERSION}
   dest: offline-files/kubespray/${KUBESPRAY_VERSION}/images
   tar: busybox.tar
 - key: k8s-base:docker.io/library/nginx
